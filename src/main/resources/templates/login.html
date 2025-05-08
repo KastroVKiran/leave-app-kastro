@@ -1,216 +1,79 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Login - Leave Management System by Kastro</title>
+    <title>Learn With KASTRO</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body {
-            background: linear-gradient(135deg, #dfe9f3, #ffffff);
-            font-family: 'Poppins', sans-serif;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-
-        .top-bar {
-            background: linear-gradient(90deg, #4e73df, #375acd);
-            color: white;
-            padding: 12px 0;
-            text-align: center;
-            font-weight: 600;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            letter-spacing: 0.8px;
-        }
-
-        .learn-kastro {
-            text-align: center;
-            margin-top: 10px;
-            font-size: 1rem;
-            color: #4e73df;
-            animation: fadeInDown 1s ease-out;
-        }
-
-        .social-icons {
-            text-align: center;
-            margin-top: 5px;
-        }
-
-        .social-icons a {
-            margin: 0 8px;
-            color: #4e73df;
-            font-size: 1.5rem;
-            transition: transform 0.3s, color 0.3s;
-        }
-
-        .social-icons a:hover {
-            color: #ff0000;
-            transform: scale(1.2);
-        }
-
         .login-container {
-            max-width: 450px;
-            margin: auto;
-            padding: 35px;
-            background-color: #ffffffdd;
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-            backdrop-filter: blur(8px);
-            margin-top: 50px;
-            animation: fadeIn 1s ease-in;
+            max-width: 400px;
+            margin: 100px auto;
+            padding: 30px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
         }
-
         .login-title {
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 30px;
             color: #3a3a3a;
-            font-weight: 700;
-            letter-spacing: 1px;
-            font-size: 1.8rem;
         }
-
-        .profile-img {
-            display: block;
-            margin: 0 auto 20px auto;
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 3px solid #4e73df;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            transition: transform 0.3s;
-        }
-
-        .profile-img:hover {
-            transform: scale(1.1) rotate(3deg);
-        }
-
-        .btn-login {
-            background: linear-gradient(90deg, #4e73df, #375acd);
-            border: none;
-            width: 100%;
-            padding: 12px;
-            border-radius: 50px;
+        .login-form {
             margin-top: 20px;
-            transition: all 0.3s ease;
-            color: white;
-            font-weight: 600;
-            letter-spacing: 0.5px;
         }
-
-        .btn-login i {
-            margin-left: 8px;
-        }
-
-        .btn-login:hover {
-            background: linear-gradient(90deg, #375acd, #4e73df);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(0,0,0,0.25);
-        }
-
-        .form-control {
-            padding: 12px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            transition: border-color 0.3s;
-        }
-
-        .form-control:focus {
+        .btn-login {
+            background-color: #4e73df;
             border-color: #4e73df;
-            box-shadow: 0 0 5px rgba(78,115,223,0.3);
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
         }
-
+        .btn-login:hover {
+            background-color: #375acd;
+            border-color: #375acd;
+        }
+        .form-control {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
         .alert {
             margin-bottom: 20px;
-        }
-
-        footer {
-            text-align: center;
-            margin-top: auto;
-            padding: 15px;
-            font-size: 0.95rem;
-            color: #3a3a3a;
-            letter-spacing: 0.5px;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes fadeInDown {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 <body>
-    <div class="top-bar">
-        <i class="fas fa-code"></i> This app is developed by <strong>KASTRO</strong>
-    </div>
-
     <div class="container">
-        <div class="learn-kastro">
-            <i class="fab fa-youtube"></i> Learn With <strong>KASTRO</strong>
-        </div>
-
-        <div class="social-icons">
-            <a href="https://www.youtube.com/@LearnWithKASTRO" target="_blank"><i class="fab fa-youtube"></i></a>
-            <a href="https://www.linkedin.com/in/kastro-kiran/" target="_blank"><i class="fab fa-linkedin"></i></a>
-        </div>
-
         <div class="login-container">
-            <h2 class="login-title">Leave Management System by Kastro</h2>
-
-            <img class="profile-img" src="https://media.licdn.com/dms/image/v2/D5603AQHJB_lF1d9OSw/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1718971147172?e=1752105600&amp;v=beta&amp;t=VO5jO8GYVs-_UNrKx9gQdrPlM_CuD1VjWqpyD0CZLTs" alt="Profile Image">
-
+            <h2 class="login-title">Leave Management System by KASTRO</h2>
+            
             <div th:if="${param.error}" class="alert alert-danger">
-                <i class="fas fa-exclamation-circle"></i> Invalid employee ID or password
+                Invalid employee ID or password
             </div>
             <div th:if="${param.logout}" class="alert alert-success">
-                <i class="fas fa-check-circle"></i> You have been logged out
+                You have been logged out
             </div>
-
-            <form class="login-form needs-validation" th:action="@{/login}" method="post" novalidate>
+            
+            <form class="login-form" th:action="@{/login}" method="post">
                 <div class="mb-3">
-                    <label for="username" class="form-label"><i class="fas fa-id-badge"></i> Employee ID</label>
+                    <label for="username" class="form-label">Employee ID</label>
                     <input type="text" class="form-control" id="username" name="username" required>
-                    <div class="invalid-feedback">Please enter your Employee ID</div>
                 </div>
                 <div class="mb-3">
-                    <label for="password" class="form-label"><i class="fas fa-lock"></i> Password</label>
+                    <label for="password" class="form-label">Password</label>
                     <input type="password" class="form-control" id="password" name="password" required>
-                    <div class="invalid-feedback">Please enter your password</div>
                 </div>
-                <button type="submit" class="btn btn-login">Login <i class="fas fa-sign-in-alt"></i></button>
+                <button type="submit" class="btn btn-primary btn-login">Login</button>
             </form>
         </div>
     </div>
-
-    <footer>
-        &copy; All rights Kastro | <i class="fas fa-heart text-danger"></i> Designed with passion
-    </footer>
-
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
-    <script>
-        (function () {
-            'use strict';
-            var forms = document.querySelectorAll('.needs-validation');
-            Array.prototype.slice.call(forms)
-                .forEach(function (form) {
-                    form.addEventListener('submit', function (event) {
-                        if (!form.checkValidity()) {
-                            event.preventDefault();
-                            event.stopPropagation();
-                        }
-                        form.classList.add('was-validated');
-                    }, false);
-                });
-        })();
-    </script>
 </body>
 </html>
