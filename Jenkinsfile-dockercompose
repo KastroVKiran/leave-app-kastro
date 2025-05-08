@@ -15,7 +15,7 @@ pipeline {
     stages {
         stage('Git Clone') {
             steps {
-                checkout scm
+                git 'https://github.com/KastroVKiran/leave-app-kastro.git'
             }
         }
         
@@ -45,13 +45,6 @@ pipeline {
                 sh "docker-compose down || true"
                 sh "docker-compose up -d"
             }
-        }
-    }
-    
-    post {
-        always {
-            sh "docker logout"
-            cleanWs()
         }
     }
 }
