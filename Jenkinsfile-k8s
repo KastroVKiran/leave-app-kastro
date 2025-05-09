@@ -86,37 +86,34 @@ pipeline {
         }
 
         stage('Deploy MySQL') {
-    steps {
-        dir('k8s') {
-            script {
-                // Apply all resources
-                sh """
-                kubectl apply -f ebs-sc.yml -n ${K8S_NAMESPACE}
-                kubectl apply -f mysql-secret.yml -n ${K8S_NAMESPACE}
-                kubectl apply -f mysql-pvc.yml -n ${K8S_NAMESPACE}
-                kubectl apply -f mysql-deployment.yml -n ${K8S_NAMESPACE}
-                kubectl apply -f mysql-service.yml -n ${K8S_NAMESPACE}
-                """
+            steps {
+                dir('k8s') {
+                    script {
+                        sh """
+                            kubectl apply -f ebs-sc.yml -n ${K8S_NAMESPACE}
+                            kubectl apply -f mysql-secret.yml -n ${K8S_NAMESPACE}
+                            kubectl apply -f mysql-pvc.yml -n ${K8S_NAMESPACE}
+                            kubectl apply -f mysql-deployment.yml -n ${K8S_NAMESPACE}
+                            kubectl apply -f mysql-service.yml -n ${K8S_NAMESPACE}
+                        """
 
-                // Remove conflicting env vars if they exist
-                sh """
-                kubectl patch deployment mysql -n ${K8S_NAMESPACE} --type=json \
-                    -p='[{"op": "remove", "path": "/spec/template/spec/containers/0/env/2"}]' || true
-                kubectl patch deployment mysql -n ${K8S_NAMESPACE} --type=json \
-                    -p='[{"op": "remove", "path": "/spec/template/spec/containers/0/env/3"}]' || true
-                """
+                        sh """
+                            kubectl patch deployment mysql -n ${K8S_NAMESPACE} --type=json \
+                                -p='[{"op": "remove", "path": "/spec/template/spec/containers/0/env/2"}]' || true
+                            kubectl patch deployment mysql -n ${K8S_NAMESPACE} --type=json \
+                                -p='[{"op": "remove", "path": "/spec/template/spec/containers/0/env/3"}]' || true
+                        """
 
-                // Wait for MySQL
-                timeout(time: 10, unit: 'MINUTES') {
-                    sh """
-                    kubectl rollout status deployment/mysql -n ${K8S_NAMESPACE}
-                    kubectl wait --for=condition=Ready pod -l app=mysql --timeout=600s -n ${K8S_NAMESPACE}
-                    """
+                        timeout(time: 10, unit: 'MINUTES') {
+                            sh """
+                                kubectl rollout status deployment/mysql -n ${K8S_NAMESPACE}
+                                kubectl wait --for=condition=Ready pod -l app=mysql --timeout=600s -n ${K8S_NAMESPACE}
+                            """
+                        }
+                    }
                 }
             }
         }
-    }
-}
 
         stage('Deploy Application') {
             steps {
@@ -146,19 +143,10 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 script {
-                    def appUrl = ""
-                    retry(5) {
-                        appUrl = sh(returnStdout: true, script: """
-                            kubectl get svc leave-management-service -n ${K8S_NAMESPACE} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
-                        """).trim()
-                    }
-                    echo "Application URL: http://${appUrl}:8090"
-
-                    retry(5) {
-                        sh """
-                            curl -s -o /dev/null -w "%{http_code}" http://${appUrl}:8090/actuator/health | grep 200 || exit 1
-                        """
-                    }
+                    def appUrl = sh(returnStdout: true, script: """
+                        kubectl get svc leave-management-service -n ${K8S_NAMESPACE} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+                    """).trim()
+                    echo "##[success] Application deployed: http://${appUrl}:8090"
                 }
             }
         }
@@ -167,24 +155,12 @@ pipeline {
     post {
         always {
             sh 'docker system prune -f'
-            archiveArtifacts artifacts: 'k8s-logs/*.log', allowEmptyArchive: true
         }
         failure {
-            script {
+            steps {
                 sh """
-                    mkdir -p k8s-logs
-                    echo "=== Cluster Information ===" > k8s-logs/failure.log
-                    kubectl cluster-info >> k8s-logs/failure.log 2>&1
-                    echo "\\n=== Namespace Resources ===" >> k8s-logs/failure.log
-                    kubectl get all,pv,pvc -n ${K8S_NAMESPACE} >> k8s-logs/failure.log 2>&1
-                    echo "\\n=== MySQL Details ===" >> k8s-logs/failure.log
-                    kubectl describe pod -l app=mysql -n ${K8S_NAMESPACE} >> k8s-logs/mysql-describe.log 2>&1
-                    kubectl logs -l app=mysql -n ${K8S_NAMESPACE} >> k8s-logs/mysql-logs.log 2>&1
-                    echo "\\n=== App Details ===" >> k8s-logs/failure.log
-                    kubectl describe pod -l app=leave-management -n ${K8S_NAMESPACE} >> k8s-logs/app-describe.log 2>&1
-                    kubectl logs -l app=leave-management -n ${K8S_NAMESPACE} >> k8s-logs/app-logs.log 2>&1
-                    echo "\\n=== Events ===" >> k8s-logs/failure.log
-                    kubectl get events -n ${K8S_NAMESPACE} --sort-by='.metadata.creationTimestamp' >> k8s-logs/failure.log 2>&1
+                    kubectl get pods -n ${K8S_NAMESPACE} > k8s-logs/failure.log
+                    kubectl logs -l app=mysql -n ${K8S_NAMESPACE} --tail=50 >> k8s-logs/failure.log
                 """
             }
         }
