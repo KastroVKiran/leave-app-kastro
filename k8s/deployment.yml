@@ -1,8 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: leave-management
-  namespace: default
+  name: leave-management-app
   labels:
     app: leave-management
 spec:
@@ -20,6 +19,10 @@ spec:
       labels:
         app: leave-management
     spec:
+      initContainers:
+      - name: wait-for-mysql
+        image: busybox:1.28
+        command: ['sh', '-c', 'until nc -z mysql 3306; do echo "Waiting for MySQL"; sleep 2; done']
       containers:
       - name: leave-management
         image: kastrov/leave-management:latest
@@ -28,7 +31,7 @@ spec:
         - containerPort: 8090
         env:
         - name: SPRING_DATASOURCE_URL
-          value: jdbc:mysql://mysql:3306/leavemanagement?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+          value: jdbc:mysql://mysql:3306/leavemanagement?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true
         - name: SPRING_DATASOURCE_USERNAME
           valueFrom:
             secretKeyRef:
@@ -39,27 +42,35 @@ spec:
             secretKeyRef:
               name: mysql-secret
               key: password
+        - name: JAVA_OPTS
+          value: "-Xms512m -Xmx1024m -XX:+UseG1GC"
         resources:
           requests:
-            memory: "512Mi"
-            cpu: "200m"
+            memory: "768Mi"
+            cpu: "300m"
           limits:
-            memory: "1Gi"
-            cpu: "500m"
+            memory: "1536Mi"
+            cpu: "800m"
         readinessProbe:
           httpGet:
             path: /actuator/health
             port: 8090
-          initialDelaySeconds: 120  # Increased from 60
-          periodSeconds: 10
-          failureThreshold: 10     # Added
-          timeoutSeconds: 5         # Added
+          initialDelaySeconds: 60
+          periodSeconds: 15
+          failureThreshold: 5
+          timeoutSeconds: 5
         livenessProbe:
           httpGet:
             path: /actuator/health
             port: 8090
-          initialDelaySeconds: 180 # Increased from 90
+          initialDelaySeconds: 90
           periodSeconds: 30
-          failureThreshold: 3      # Added
-          timeoutSeconds: 5        # Added
+          failureThreshold: 3
+          timeoutSeconds: 5
+        startupProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8090
+          failureThreshold: 30
+          periodSeconds: 10
       restartPolicy: Always
