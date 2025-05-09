@@ -7,5 +7,5 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 1Gi  # Reduced to 1GB for testing
-  storageClassName: ""  # Empty string forces use of existing PVs
+      storage: 1Gi
+  storageClassName: ""  # Explicitly empty to use existing PVs
