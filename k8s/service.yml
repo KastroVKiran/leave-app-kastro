@@ -1,14 +1,15 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: leave-management
-  namespace: default
+  name: leave-management-service
   labels:
     app: leave-management
 spec:
+  type: LoadBalancer
   selector:
     app: leave-management
   ports:
-  - port: 8090
-    targetPort: 8090
-  type: LoadBalancer
+    - protocol: TCP
+      port: 80
+      targetPort: 8090
+      name: http
