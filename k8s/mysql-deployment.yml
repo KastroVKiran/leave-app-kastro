@@ -33,6 +33,11 @@ spec:
             secretKeyRef:
               name: mysql-secret
               key: username
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: password
         ports:
         - containerPort: 3306
         volumeMounts:
@@ -45,7 +50,25 @@ spec:
           limits:
             memory: "1Gi"
             cpu: "500m"
+        startupProbe:
+          exec:
+            command:
+            - bash
+            - -c
+            - "mysqladmin ping -uroot -p${MYSQL_ROOT_PASSWORD}"
+          initialDelaySeconds: 15
+          periodSeconds: 5
+          failureThreshold: 10
         readinessProbe:
+          exec:
+            command:
+            - bash
+            - -c
+            - "mysqladmin ping -uroot -p${MYSQL_ROOT_PASSWORD}"
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 2
+        livenessProbe:
           exec:
             command:
             - bash
