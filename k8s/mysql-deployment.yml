@@ -40,6 +40,15 @@ spec:
           limits:
             memory: "1Gi"
             cpu: "500m"
+        readinessProbe:
+          exec:
+            command:
+            - bash
+            - -c
+            - "mysqladmin ping -h 127.0.0.1 -p${MYSQL_ROOT_PASSWORD}"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 3
       volumes:
       - name: mysql-persistent-storage
         persistentVolumeClaim:
