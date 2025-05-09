@@ -25,6 +25,18 @@ pipeline {
             }
         }
         
+        stage('Prepare Docker Assets') {
+            steps {
+                // Download wait-for-it.sh if not present
+                sh '''
+                if [ ! -f wait-for-it.sh ]; then
+                    wget https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh -O wait-for-it.sh
+                    chmod +x wait-for-it.sh
+                fi
+                '''
+            }
+        }
+        
         stage('Create Docker Image') {
             steps {
                 sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
@@ -45,6 +57,13 @@ pipeline {
                 sh "docker-compose down || true"
                 sh "docker-compose up -d"
             }
+        }
+    }
+    
+    post {
+        always {
+            // Clean up Docker images to save space
+            sh 'docker system prune -f || true'
         }
     }
 }
