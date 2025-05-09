@@ -16,11 +16,6 @@ services:
       - mysql-data:/var/lib/mysql
     networks:
       - leave-management-network
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppassword"]
-      interval: 5s
-      timeout: 10s
-      retries: 10
 
   app:
     build:
@@ -28,12 +23,11 @@ services:
       dockerfile: Dockerfile
     container_name: leave-management-app
     depends_on:
-      mysql:
-        condition: service_healthy
+      - mysql
     ports:
       - "8090:8090"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/leavemanagement?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/leavemanagement?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: password
     networks:
