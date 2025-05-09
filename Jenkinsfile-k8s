@@ -1,37 +1,40 @@
 pipeline {
     agent any
-    
+
     tools {
         jdk 'jdk17'
         maven 'maven3'
     }
-    
+
     environment {
         DOCKER_HUB_CREDS = credentials('docker-creds')
         DOCKER_IMAGE = "kastrov/leave-management"
         DOCKER_TAG = "${BUILD_NUMBER}"
+        EKS_CLUSTER = "kastro-eks"
+        AWS_REGION = "us-east-1"
     }
-    
+
     stages {
         stage('Git Clone') {
             steps {
-                checkout scm
+                git branch: 'master',
+                url: 'https://github.com/KastroVKiran/leave-app-kastro.git'
             }
         }
-        
+
         stage('Build Project') {
             steps {
                 sh 'mvn clean package -DskipTests'
             }
         }
-        
+
         stage('Create Docker Image') {
             steps {
                 sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
                 sh "docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest"
             }
         }
-        
+
         stage('Push Docker Image') {
             steps {
                 sh "echo ${DOCKER_HUB_CREDS_PSW} | docker login -u ${DOCKER_HUB_CREDS_USR} --password-stdin"
@@ -39,26 +42,114 @@ pipeline {
                 sh "docker push ${DOCKER_IMAGE}:latest"
             }
         }
-        
-        stage('Update K8s Deployment') {
+
+        stage('Configure AWS EKS Access') {
             steps {
-                sh "sed -i 's|${DOCKER_IMAGE}:latest|${DOCKER_IMAGE}:${DOCKER_TAG}|g' k8s/deployment.yml"
-                sh "kubectl apply -f k8s/deployment.yml"
-                sh "kubectl apply -f k8s/service.yml"
+                sh """
+                aws sts get-caller-identity
+                aws eks --region ${AWS_REGION} update-kubeconfig --name ${EKS_CLUSTER}
+                kubectl cluster-info
+                """
             }
         }
-        
+
+        stage('Cleanup Previous Deployment') {
+            steps {
+                dir('k8s') {
+                    sh """
+                    kubectl delete -f deployment.yml --ignore-not-found
+                    kubectl delete -f service.yml --ignore-not-found
+                    kubectl delete pvc mysql-pvc --ignore-not-found
+                    kubectl delete -f mysql-deployment.yml --ignore-not-found
+                    kubectl delete -f mysql-service.yml --ignore-not-found
+                    kubectl delete -f ebs-sc.yml --ignore-not-found
+                    """
+                }
+            }
+        }
+
+        stage('Deploy MySQL') {
+    steps {
+        dir('k8s') {
+            // Apply all MySQL resources at once
+            sh """
+            kubectl apply -f ebs-sc.yml
+            kubectl apply -f mysql-secret.yml
+            kubectl apply -f mysql-pvc.yml
+            kubectl apply -f mysql-deployment.yml
+            kubectl apply -f mysql-service.yml
+            """
+            
+            // Wait for PVC to bind (now will bind when pod is scheduled)
+            sh """
+            echo 'Waiting for MySQL pod to be ready...'
+            kubectl wait --for=condition=Ready pod -l app=mysql --timeout=300s
+            
+            echo 'Verifying PVC binding...'
+            kubectl get pvc mysql-pvc -o jsonpath='{.status.phase}' | grep -q Bound || {
+              echo 'PVC failed to bind!';
+              kubectl describe pvc mysql-pvc;
+              exit 1;
+            }
+            """
+        }
+    }
+}
+
+        stage('Deploy Application') {
+            steps {
+                dir('k8s') {
+                    sh """
+                    # Update deployment with new image
+                    sed -i "s|image:.*|image: ${DOCKER_IMAGE}:${DOCKER_TAG}|g" deployment.yml
+
+                    kubectl apply -f deployment.yml
+                    kubectl apply -f service.yml
+                    """
+                }
+
+                sh """
+                # Wait for application to be ready
+                kubectl rollout status deployment/leave-management-app --timeout=300s
+                """
+            }
+        }
+
         stage('Verify Deployment') {
             steps {
-                sh "kubectl rollout status deployment/leave-management"
+                sh """
+                echo "=== Kubernetes Resources ==="
+                kubectl get pods,svc,pvc,pv -o wide
+
+                echo "\\n=== Application URL ==="
+                kubectl get svc leave-management-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+                """
             }
         }
     }
-    
+
     post {
         always {
-            sh "docker logout"
-            cleanWs()
+            // Clean up Docker images
+            sh 'docker system prune -f'
+
+            // Archive logs for debugging
+            archiveArtifacts artifacts: 'k8s-logs/*.log', allowEmptyArchive: true
+        }
+        success {
+            echo "Deployment successful!"
+        }
+        failure {
+            // Capture detailed logs on failure
+            sh """
+            mkdir -p k8s-logs
+            kubectl get all > k8s-logs/resources.log
+            kubectl describe pod -l app=mysql > k8s-logs/mysql-describe.log
+            kubectl logs -l app=mysql > k8s-logs/mysql-logs.log
+            kubectl describe pod -l app=leave-management-app > k8s-logs/app-describe.log
+            kubectl logs -l app=leave-management-app > k8s-logs/app-logs.log
+            kubectl get pv,pvc -o wide > k8s-logs/volumes.log
+            """
         }
     }
 }
