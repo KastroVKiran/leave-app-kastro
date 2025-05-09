@@ -1,3 +1,4 @@
+# k8s/mysql-pvc.yml
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -5,7 +6,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
+  storageClassName: ebs-sc
   resources:
     requests:
-      storage: 1Gi
-  storageClassName: mysql-storageclass
+      storage: 5Gi
