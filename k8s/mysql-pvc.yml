@@ -1,4 +1,3 @@
-# k8s/mysql-pvc.yml
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -10,3 +9,4 @@ spec:
   resources:
     requests:
       storage: 5Gi
+  volumeMode: Filesystem
